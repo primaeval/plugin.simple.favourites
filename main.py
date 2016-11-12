@@ -36,6 +36,13 @@ def remove_formatting(label):
     label = re.sub(r"\[/?COLOR.*?\]",'',label)
     return label
 
+def escape( str ):
+    str = str.replace("<", "&lt;")
+    str = str.replace(">", "&gt;")
+    str = str.replace("&", "&amp;")
+    str = str.replace("\"", "&quot;")
+    return str
+
 @plugin.route('/play/<url>')
 def play(url):
     xbmc.executebuiltin('PlayMedia("%s")' % url)
@@ -46,7 +53,33 @@ def execute(url):
 
 @plugin.route('/favourites/<favourites_file>/<name>/<url>')
 def remove_favourite(favourites_file,name,url):
-    log((favourites_file,name,url))
+    f = xbmcvfs.File(favourites_file,"rb")
+    data = f.read()
+    f.close()
+    data = re.sub('.*<favourite name="%s".*?>%s</favourite>.*\n' % (re.escape(name),re.escape(url)),'',data)
+    f = xbmcvfs.File(favourites_file,"wb")
+    f.write(data)
+    f.close()
+    xbmc.executebuiltin('Container.Refresh')
+
+@plugin.route('/rename_favourite/<favourites_file>/<name>/<fav>')
+def rename_favourite(favourites_file,name,fav):
+    d = xbmcgui.Dialog()
+    new_name = d.input("New Name for: %s" % name,name)
+    if not new_name:
+        return
+    f = xbmcvfs.File(favourites_file,"rb")
+    data = f.read()
+    f.close()
+    new_fav = fav.replace(name,escape(new_name))
+    data = data.replace(fav,new_fav)
+    f = xbmcvfs.File(favourites_file,"wb")
+    f.write(data)
+    f.close()
+    xbmc.executebuiltin('Container.Refresh')
+
+@plugin.route('/change_favourite_icon/<favourites_file>/<name>/<url>')
+def change_favourite_icon(favourites_file,name,url):
     f = xbmcvfs.File(favourites_file,"rb")
     data = f.read()
     f.close()
@@ -79,6 +112,8 @@ def favourites(folder_path):
         if url:
             context_items = []
             context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Remove', 'XBMC.RunPlugin(%s)' % (plugin.url_for(remove_favourite, favourites_file=favourites_file, name=label, url=url))))
+            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Rename', 'XBMC.RunPlugin(%s)' % (plugin.url_for(rename_favourite, favourites_file=favourites_file, name=label, fav=fav))))
+            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Change Icon', 'XBMC.RunPlugin(%s)' % (plugin.url_for(change_favourite_icon, favourites_file=favourites_file, name=label, url=url))))
             label = re.sub('&quot;','"',label)
             url = re.sub('&quot;','"',url)
             thumbnail = re.sub('&quot;','"',thumbnail)
