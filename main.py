@@ -296,7 +296,7 @@ def add(path):
         items.append(
         {
             'label': "[B]%s Library[/B]" % media.title(),
-            'path': plugin.url_for('add_library', path=path),
+            'path': plugin.url_for('add_addons_folder', favourites_file=favourites_file, media=media, path=path),
             'thumbnail': thumbnail,
         })
 
