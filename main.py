@@ -160,9 +160,9 @@ def add_item(title,path,icon):
 def add_favourites(path):
     items = []
     #favourites_file = "%sfavourites.xml" % folder_path
-    favourites_file = "special://profile/favourites.xml"
+    kodi_favourites = "special://profile/favourites.xml"
     output_file = "%sfavourites.xml" % path
-    f = xbmcvfs.File(favourites_file,"rb")
+    f = xbmcvfs.File(kodi_favourites,"rb")
     data = f.read()
     favourites = re.findall("<favourite.*?</favourite>",data)
     for fav in favourites:
