@@ -244,7 +244,7 @@ def add_addons_folder(favourites_file,media,path):
                 'thumbnail': f['thumbnail'],
                 'context_menu': context_items,
             })
-    return dir_items + file_items
+    return sorted(dir_items, key=lambda x: x["label"].lower()) + sorted(file_items, key=lambda x: x["label"].lower())
 
 
 @plugin.route('/add_addons/<favourites_file>/<media>')
@@ -264,10 +264,17 @@ def add_addons(favourites_file, media):
         label = addon['name']
         id = addon['addonid']
         thumbnail = addon['thumbnail']
+        if not thumbnail:
+            thumbnail = get_icon_path('unknown')
         path = "plugin://%s" % id
         context_items = []
         fancy_label = "[B]%s[/B]" % label
-        #context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Add', 'XBMC.RunPlugin(%s)' % (plugin.url_for(add_url, id=id, label=label.encode("utf8"), path=path, thumbnail=thumbnail))))
+        if media == "video":
+            window = "10025"
+        else:
+            window = "10502"
+        play_url = escape('ActivateWindow(%s,"%s")' % (window,path))
+        context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Add', 'XBMC.RunPlugin(%s)' % (plugin.url_for(add_favourite, favourites_file=favourites_file, name=label.encode("utf8"), url=play_url, thumbnail=thumbnail))))
         items.append(
         {
             'label': fancy_label,
