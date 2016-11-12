@@ -18,18 +18,19 @@ from types import *
 plugin = Plugin()
 big_list_view = False
 
+
+def addon_id():
+    return xbmcaddon.Addon().getAddonInfo('id')
+
 def log(v):
     xbmc.log(repr(v))
 
-
 def get_icon_path(icon_name):
-    addon_name = xbmcaddon.Addon().getAddonInfo('id')
     if plugin.get_setting('user.icons') == "true":
-        user_icon = "special://profile/addon_data/%s/icons/%s.png" % (addon_name,icon_name)
+        user_icon = "special://profile/addon_data/%s/icons/%s.png" % (addon_id(),icon_name)
         if xbmcvfs.exists(user_icon):
             return user_icon
-    return "special://home/addons/%s/resources/img/%s.png" % (addon_name,icon_name)
-
+    return "special://home/addons/%s/resources/img/%s.png" % (addon_id(),icon_name)
 
 def remove_formatting(label):
     label = re.sub(r"\[/?[BI]\]",'',label)
@@ -37,10 +38,17 @@ def remove_formatting(label):
     return label
 
 def escape( str ):
+    str = str.replace("&", "&amp;")
     str = str.replace("<", "&lt;")
     str = str.replace(">", "&gt;")
-    str = str.replace("&", "&amp;")
     str = str.replace("\"", "&quot;")
+    return str
+
+def unescape( str ):
+    str = str.replace("&lt;","<")
+    str = str.replace("&gt;",">")
+    str = str.replace("&quot;","\"")
+    str = str.replace("&amp;","&")
     return str
 
 @plugin.route('/play/<url>')
@@ -65,7 +73,8 @@ def remove_favourite(favourites_file,name,url):
 @plugin.route('/rename_favourite/<favourites_file>/<name>/<fav>')
 def rename_favourite(favourites_file,name,fav):
     d = xbmcgui.Dialog()
-    new_name = d.input("New Name for: %s" % name,name)
+    dialog_name = unescape(name)
+    new_name = d.input("New Name for: %s" % dialog_name,dialog_name)
     if not new_name:
         return
     f = xbmcvfs.File(favourites_file,"rb")
@@ -78,12 +87,17 @@ def rename_favourite(favourites_file,name,fav):
     f.close()
     xbmc.executebuiltin('Container.Refresh')
 
-@plugin.route('/change_favourite_icon/<favourites_file>/<name>/<url>')
-def change_favourite_icon(favourites_file,name,url):
+@plugin.route('/change_favourite_thumbnail/<favourites_file>/<thumbnail>/<fav>')
+def change_favourite_thumbnail(favourites_file,thumbnail,fav):
+    d = xbmcgui.Dialog()
+    new_thumbnail = d.browse(2, 'Choose Image', 'files')
+    if not new_thumbnail:
+        return
     f = xbmcvfs.File(favourites_file,"rb")
     data = f.read()
     f.close()
-    data = re.sub('.*<favourite name="%s".*?>%s</favourite>.*\n' % (re.escape(name),re.escape(url)),'',data)
+    new_fav = fav.replace(thumbnail,escape(new_thumbnail))
+    data = data.replace(fav,new_fav)
     f = xbmcvfs.File(favourites_file,"wb")
     f.write(data)
     f.close()
@@ -113,15 +127,12 @@ def favourites(folder_path):
             context_items = []
             context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Remove', 'XBMC.RunPlugin(%s)' % (plugin.url_for(remove_favourite, favourites_file=favourites_file, name=label, url=url))))
             context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Rename', 'XBMC.RunPlugin(%s)' % (plugin.url_for(rename_favourite, favourites_file=favourites_file, name=label, fav=fav))))
-            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Change Icon', 'XBMC.RunPlugin(%s)' % (plugin.url_for(change_favourite_icon, favourites_file=favourites_file, name=label, url=url))))
-            label = re.sub('&quot;','"',label)
-            url = re.sub('&quot;','"',url)
-            thumbnail = re.sub('&quot;','"',thumbnail)
+            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Change Image', 'XBMC.RunPlugin(%s)' % (plugin.url_for(change_favourite_thumbnail, favourites_file=favourites_file, thumbnail=thumbnail, fav=fav))))
             items.append(
             {
-                'label': label,
-                'path': plugin.url_for('execute',url=url),
-                'thumbnail':thumbnail,
+                'label': unescape(label),
+                'path': plugin.url_for('execute',url=unescape(url)),
+                'thumbnail':unescape(thumbnail),
                 'context_menu': context_items,
             })
     return items
@@ -137,8 +148,7 @@ def add_folder():
     folder_name = d.input("New Folder")
     if not folder_name:
         return
-    addon_name = xbmcaddon.Addon().getAddonInfo('id')
-    path = "special://profile/addon_data/%s/folders/%s/" % (addon_name,folder_name)
+    path = "special://profile/addon_data/%s/folders/%s/" % (addon_id(),folder_name)
     xbmcvfs.mkdirs(path)
     folder_icon = get_icon_path('folder')
     xbmcvfs.copy(folder_icon,path+"icon.png")
@@ -155,39 +165,27 @@ def add():
     })
     return items
 
-
 @plugin.route('/')
 def index():
-    return index_of()
+    folder_path = "special://profile/addon_data/%s/folders/" % (addon_id())
+    return index_of(folder_path)
 
 @plugin.route('/index_of/<path>')
 def index_of(path=None):
-    input_path = path
     items = []
 
-    if input_path:
-        folder_path = input_path
-    else:
-        addon_name = xbmcaddon.Addon().getAddonInfo('id')
-        folder_path = "special://profile/addon_data/%s/folders/" % (addon_name)
-
-    folders, files = xbmcvfs.listdir(folder_path)
+    folders, files = xbmcvfs.listdir(path)
     for folder in sorted(folders):
-        path = "%s/%s/" % (folder_path,folder)
-        thumbnail = "%sicon.png" % path
+        folder_path = "%s/%s/" % (path,folder)
+        thumbnail = "%sicon.png" % folder_path
         items.append(
         {
             'label': folder,
-            'path': plugin.url_for('index_of', path=path),
+            'path': plugin.url_for('index_of', path=folder_path),
             'thumbnail':thumbnail,
         })
 
-    if input_path:
-        favourites_path = input_path
-    else:
-        favourites_path = "special://profile/"
-
-    items = items + favourites(favourites_path)
+    items = items + favourites(path)
 
     items.append(
     {
