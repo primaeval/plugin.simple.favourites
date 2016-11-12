@@ -159,7 +159,6 @@ def add_item(title,path,icon):
 @plugin.route('/add_favourites/<path>')
 def add_favourites(path):
     items = []
-    #favourites_file = "%sfavourites.xml" % folder_path
     kodi_favourites = "special://profile/favourites.xml"
     output_file = "%sfavourites.xml" % path
     f = xbmcvfs.File(kodi_favourites,"rb")
@@ -181,9 +180,6 @@ def add_favourites(path):
         if url:
             context_items = []
             context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Add', 'XBMC.RunPlugin(%s)' % (plugin.url_for(add_favourite, favourites_file=output_file, name=label, url=url, thumbnail=thumbnail))))
-            #context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Remove', 'XBMC.RunPlugin(%s)' % (plugin.url_for(remove_favourite, favourites_file=favourites_file, name=label, url=url))))
-            #context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Rename', 'XBMC.RunPlugin(%s)' % (plugin.url_for(rename_favourite, favourites_file=favourites_file, name=label, fav=fav))))
-            #context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Change Image', 'XBMC.RunPlugin(%s)' % (plugin.url_for(change_favourite_thumbnail, favourites_file=favourites_file, thumbnail=thumbnail, fav=fav))))
             items.append(
             {
                 'label': unescape(label),
@@ -204,20 +200,104 @@ def add_folder(path):
     folder_icon = get_icon_path('folder')
     xbmcvfs.copy(folder_icon,path+"icon.png")
 
+@plugin.route('/add_library/<path>')
+def add_library(path):
+    pass
+
+@plugin.route('/add_addons_folder/<media>/<path>')
+def add_addons_folder(media,path):
+    try:
+        response = RPC.files.get_directory(media=media, directory=path, properties=["thumbnail"])
+    except:
+        return
+    files = response["files"]
+    log(files)
+    dir_items = []
+    file_items = []
+    for f in files:
+        context_items = []
+        if f['filetype'] == 'directory':
+            dir_items.append({
+                'label': "[B]%s[/B]" % remove_formatting(f['label']),
+                'path': plugin.url_for('add_addons_folder',media="files", path=f['file']),
+                'thumbnail': f['thumbnail'],
+                'context_menu': context_items,
+            })
+        else:
+            file_items.append({
+                'label': "%s" % remove_formatting(f['label']),
+                'path': plugin.url_for('play',url=f['file']),
+                'thumbnail': f['thumbnail'],
+                'context_menu': context_items,
+            })
+    return dir_items + file_items
+
+
+@plugin.route('/add_addons/<media>')
+def add_addons(media):
+    type = "xbmc.addon.%s" % media
+
+    response = RPC.addons.get_addons(type=type,properties=["name", "thumbnail"])
+    if "addons" not in response:
+        return
+
+    addons = response["addons"]
+
+    items = []
+
+    addons = sorted(addons, key=lambda addon: remove_formatting(addon['name']).lower())
+    for addon in addons:
+        label = addon['name']
+        id = addon['addonid']
+        thumbnail = addon['thumbnail']
+        path = "plugin://%s" % id
+        context_items = []
+        fancy_label = "[B]%s[/B]" % label
+        #context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Add', 'XBMC.RunPlugin(%s)' % (plugin.url_for(add_url, id=id, label=label.encode("utf8"), path=path, thumbnail=thumbnail))))
+        items.append(
+        {
+            'label': fancy_label,
+            'path': plugin.url_for('add_addons_folder',media="files", path=path),
+            'thumbnail': thumbnail,
+            'context_menu': context_items,
+        })
+    return items
+
 @plugin.route('/add/<path>')
 def add(path):
     items = []
 
+    for media in ["video", "music"]:
+        label = media
+        path = "library://%s" % media
+        thumbnail = get_icon_path(media)
+        items.append(
+        {
+            'label': "[B]%s Library[/B]" % media.title(),
+            'path': plugin.url_for('add_library', path=path),
+            'thumbnail': thumbnail,
+        })
+
+    for media in ["video", "audio"]:
+        label = media
+        thumbnail = get_icon_path(media)
+        items.append(
+        {
+            'label': "[B]%s Addons[/B]" % media.title(),
+            'path': plugin.url_for('add_addons',media=media),
+            'thumbnail': thumbnail,
+        })
+
     items.append(
     {
-        'label': "Add Favourite",
+        'label': "[B]Favourites[/B]",
         'path': plugin.url_for('add_favourites',path=path),
         'thumbnail':get_icon_path('favourites'),
     })
 
     items.append(
     {
-        'label': "Add Folder",
+        'label': "New Folder",
         'path': plugin.url_for('add_folder',path=path),
         'thumbnail':get_icon_path('settings'),
     })
@@ -242,7 +322,6 @@ def index_of(path=None):
             'path': plugin.url_for('index_of', path=folder_path),
             'thumbnail':thumbnail,
         })
-
     items = items + favourites(path)
 
     items.append(
