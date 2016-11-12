@@ -293,12 +293,12 @@ def add(path):
 
     for media in ["video", "music"]:
         label = media
-        path = "library://%s" % media
+        lib_path = "library://%s" % media
         thumbnail = get_icon_path(media)
         items.append(
         {
             'label': "[B]%s Library[/B]" % media.title(),
-            'path': plugin.url_for('add_addons_folder', favourites_file=favourites_file, media=media, path=path),
+            'path': plugin.url_for('add_addons_folder', favourites_file=favourites_file, media=media, path=lib_path),
             'thumbnail': thumbnail,
         })
 
@@ -337,7 +337,7 @@ def index_of(path=None):
     items = []
 
     folders, files = xbmcvfs.listdir(path)
-    for folder in sorted(folders):
+    for folder in sorted(folders, key=lambda x: x.lower()):
         folder_path = "%s%s/" % (path,folder)
         thumbnail = "%sicon.png" % folder_path
         items.append(
