@@ -59,6 +59,20 @@ def play(url):
 def execute(url):
     xbmc.executebuiltin(url)
 
+@plugin.route('/add_favourite/<favourites_file>/<name>/<url>/<thumbnail>')
+def add_favourite(favourites_file,name,url,thumbnail):
+    f = xbmcvfs.File(favourites_file,"rb")
+    data = f.read()
+    f.close()
+    if not data:
+        data = '<favourites>\n</favourites>'
+    fav = '    <favourite name="%s" thumb="%s">%s</favourite>\n</favourites>' % (name,thumbnail,url)
+    data = data.replace('</favourites>',fav)
+    f = xbmcvfs.File(favourites_file,"wb")
+    f.write(data)
+    f.close()
+    xbmc.executebuiltin('Container.Refresh')
+
 @plugin.route('/favourites/<favourites_file>/<name>/<url>')
 def remove_favourite(favourites_file,name,url):
     f = xbmcvfs.File(favourites_file,"rb")
@@ -142,6 +156,43 @@ def favourites(folder_path):
 def add_item(title,path,icon):
     pass
 
+@plugin.route('/add_favourites/<path>')
+def add_favourites(path):
+    items = []
+    #favourites_file = "%sfavourites.xml" % folder_path
+    favourites_file = "special://profile/favourites.xml"
+    output_file = "%sfavourites.xml" % path
+    f = xbmcvfs.File(favourites_file,"rb")
+    data = f.read()
+    favourites = re.findall("<favourite.*?</favourite>",data)
+    for fav in favourites:
+        url = ''
+        match = re.search('<favourite name="(.*?)" thumb="(.*?)">(.*?)<',fav)
+        if match:
+            label = match.group(1)
+            thumbnail = match.group(2)
+            url = match.group(3)
+        else:
+            match = re.search('<favourite name="(.*?)">(.*?)<',fav)
+            if match:
+                label = match.group(1)
+                thumbnail = ''
+                url = match.group(2)
+        if url:
+            context_items = []
+            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Add', 'XBMC.RunPlugin(%s)' % (plugin.url_for(add_favourite, favourites_file=output_file, name=label, url=url, thumbnail=thumbnail))))
+            #context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Remove', 'XBMC.RunPlugin(%s)' % (plugin.url_for(remove_favourite, favourites_file=favourites_file, name=label, url=url))))
+            #context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Rename', 'XBMC.RunPlugin(%s)' % (plugin.url_for(rename_favourite, favourites_file=favourites_file, name=label, fav=fav))))
+            #context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Change Image', 'XBMC.RunPlugin(%s)' % (plugin.url_for(change_favourite_thumbnail, favourites_file=favourites_file, thumbnail=thumbnail, fav=fav))))
+            items.append(
+            {
+                'label': unescape(label),
+                'path': plugin.url_for('execute',url=unescape(url)),
+                'thumbnail':unescape(thumbnail),
+                'context_menu': context_items,
+            })
+    return items
+
 @plugin.route('/add_folder/<path>')
 def add_folder(path):
     d = xbmcgui.Dialog()
@@ -156,6 +207,13 @@ def add_folder(path):
 @plugin.route('/add/<path>')
 def add(path):
     items = []
+
+    items.append(
+    {
+        'label': "Add Favourite",
+        'path': plugin.url_for('add_favourites',path=path),
+        'thumbnail':get_icon_path('favourites'),
+    })
 
     items.append(
     {
@@ -176,7 +234,7 @@ def index_of(path=None):
 
     folders, files = xbmcvfs.listdir(path)
     for folder in sorted(folders):
-        folder_path = "%s/%s/" % (path,folder)
+        folder_path = "%s%s/" % (path,folder)
         thumbnail = "%sicon.png" % folder_path
         items.append(
         {
