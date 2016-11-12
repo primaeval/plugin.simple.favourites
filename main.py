@@ -219,9 +219,16 @@ def remove_folder(path):
     remove_files(path)
     xbmc.executebuiltin('Container.Refresh')
 
-@plugin.route('/rename_folder/<path>')
-def rename_folder(path):
-    pass
+@plugin.route('/rename_folder/<path>/<name>')
+def rename_folder(path,name):
+    d = xbmcgui.Dialog()
+    new_name = d.input("New Name for: %s" % name,name)
+    if not new_name:
+        return
+    old_folder = "%s%s/" % (path,name)
+    new_folder = "%s%s/" % (path,new_name)
+    xbmcvfs.rename(old_folder,new_folder)
+    xbmc.executebuiltin('Container.Refresh')
 
 @plugin.route('/change_folder_thumbnail/<path>')
 def change_folder_thumbnail(path):
@@ -368,7 +375,7 @@ def index_of(path=None):
         thumbnail = "%sicon.png" % folder_path
         context_items = []
         context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Remove', 'XBMC.RunPlugin(%s)' % (plugin.url_for(remove_folder, path=folder_path))))
-        context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Rename', 'XBMC.RunPlugin(%s)' % (plugin.url_for(rename_folder, path=folder_path))))
+        context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Rename', 'XBMC.RunPlugin(%s)' % (plugin.url_for(rename_folder, path=path, name=folder))))
         context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Change Image', 'XBMC.RunPlugin(%s)' % (plugin.url_for(change_folder_thumbnail, path=folder_path))))
         items.append(
         {
