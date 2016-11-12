@@ -142,25 +142,25 @@ def favourites(folder_path):
 def add_item(title,path,icon):
     pass
 
-@plugin.route('/add_folder')
-def add_folder():
+@plugin.route('/add_folder/<path>')
+def add_folder(path):
     d = xbmcgui.Dialog()
     folder_name = d.input("New Folder")
     if not folder_name:
         return
-    path = "special://profile/addon_data/%s/folders/%s/" % (addon_id(),folder_name)
+    path = "%s%s/" % (path,folder_name)
     xbmcvfs.mkdirs(path)
     folder_icon = get_icon_path('folder')
     xbmcvfs.copy(folder_icon,path+"icon.png")
 
-@plugin.route('/add')
-def add():
+@plugin.route('/add/<path>')
+def add(path):
     items = []
 
     items.append(
     {
         'label': "Add Folder",
-        'path': plugin.url_for('add_folder'),
+        'path': plugin.url_for('add_folder',path=path),
         'thumbnail':get_icon_path('settings'),
     })
     return items
@@ -190,7 +190,7 @@ def index_of(path=None):
     items.append(
     {
         'label': "Add",
-        'path': plugin.url_for('add'),
+        'path': plugin.url_for('add', path=path),
         'thumbnail':get_icon_path('settings'),
     })
 
