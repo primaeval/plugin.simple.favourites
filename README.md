@@ -1,3 +1,3 @@
-# plugin.program.simple.folders
+# plugin.simple.favourites
 
-Simple Folders
+Simple Favourites
