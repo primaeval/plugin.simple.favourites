@@ -12,7 +12,7 @@ import time
 import xbmc,xbmcaddon,xbmcvfs,xbmcgui
 import xbmcplugin
 import json
-
+import sys
 from types import *
 
 plugin = Plugin()
@@ -24,6 +24,7 @@ def addon_id():
 
 def log(v):
     xbmc.log(repr(v))
+
 
 def get_icon_path(icon_name):
     if plugin.get_setting('user.icons') == "true":
@@ -152,10 +153,23 @@ def favourites(folder_path):
             })
     return items
 
-
-@plugin.route('/add_item/<title>/<path>/icon')
+'''
+@plugin.route('/add_item/<title>/<path>/<icon>')
 def add_item(title,path,icon):
-    pass
+    folder_path = "special://profile/addon_data/%s/folders/" % (addon_id())
+    favourites_file = "%sfavourites.xml" % folder_path
+    f = xbmcvfs.File(favourites_file,"rb")
+    data = f.read()
+    f.close()
+    if not data:
+        data = '<favourites>\n</favourites>'
+    fav = '    <favourite name="%s" thumb="%s">%s</favourite>\n</favourites>' % (title,icon,path)
+    data = data.replace('</favourites>',fav)
+    f = xbmcvfs.File(favourites_file,"wb")
+    f.write(data)
+    f.close()
+    xbmc.executebuiltin('Container.Refresh')
+'''
 
 @plugin.route('/add_favourites/<path>')
 def add_favourites(path):
