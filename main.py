@@ -135,7 +135,7 @@ def favourites(folder_path):
             match = re.search('<favourite name="(.*?)">(.*?)<',fav)
             if match:
                 label = match.group(1)
-                thumbnail = ''
+                thumbnail = get_icon_path('unknown')
                 url = match.group(2)
         if url:
             context_items = []
@@ -176,7 +176,7 @@ def add_favourites(path):
             match = re.search('<favourite name="(.*?)">(.*?)<',fav)
             if match:
                 label = match.group(1)
-                thumbnail = ''
+                thumbnail = get_icon_path('unknown')
                 url = match.group(2)
         if url:
             context_items = []
