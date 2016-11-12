@@ -219,6 +219,8 @@ def add_addons_folder(favourites_file,media,path):
         label = remove_formatting(f['label'])
         url = f['file']
         thumbnail = f['thumbnail']
+        if not thumbnail:
+            thumbnail = get_icon_path('unknown')
         context_items = []
         if f['filetype'] == 'directory':
             if media == "video":
@@ -226,7 +228,7 @@ def add_addons_folder(favourites_file,media,path):
             else:
                 window = "10502"
             play_url = escape('ActivateWindow(%s,"%s")' % (window,url))
-            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Add', 'XBMC.RunPlugin(%s)' % (plugin.url_for(add_favourite, favourites_file=favourites_file, name=label, url=play_url, thumbnail=thumbnail))))
+            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Add', 'XBMC.RunPlugin(%s)' % (plugin.url_for(add_favourite, favourites_file=favourites_file, name=label.encode("utf8"), url=play_url, thumbnail=thumbnail))))
             dir_items.append({
                 'label': "[B]%s[/B]" % label,
                 'path': plugin.url_for('add_addons_folder', favourites_file=favourites_file, media="files", path=url),
@@ -235,7 +237,7 @@ def add_addons_folder(favourites_file,media,path):
             })
         else:
             play_url = escape('PlayMedia("%s")' % url)
-            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Add', 'XBMC.RunPlugin(%s)' % (plugin.url_for(add_favourite, favourites_file=favourites_file, name=label, url=play_url, thumbnail=thumbnail))))
+            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Add', 'XBMC.RunPlugin(%s)' % (plugin.url_for(add_favourite, favourites_file=favourites_file, name=label.encode("utf8"), url=play_url, thumbnail=thumbnail))))
             file_items.append({
                 'label': "%s" % label,
                 'path': plugin.url_for('play',url=url),
