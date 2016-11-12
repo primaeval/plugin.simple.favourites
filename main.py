@@ -225,8 +225,10 @@ def add_addons_folder(favourites_file,media,path):
         if f['filetype'] == 'directory':
             if media == "video":
                 window = "10025"
-            else:
+            elif media in ["music","audio"]:
                 window = "10502"
+            else:
+                window = "10001"
             play_url = escape('ActivateWindow(%s,"%s")' % (window,url))
             context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Add', 'XBMC.RunPlugin(%s)' % (plugin.url_for(add_favourite, favourites_file=favourites_file, name=label.encode("utf8"), url=play_url, thumbnail=thumbnail))))
             dir_items.append({
@@ -300,7 +302,7 @@ def add(path):
             'thumbnail': thumbnail,
         })
 
-    for media in ["video", "audio"]:
+    for media in ["video", "audio", "executable", "image"]:
         label = media
         thumbnail = get_icon_path(media)
         items.append(
@@ -344,7 +346,7 @@ def index_of(path=None):
             'path': plugin.url_for('index_of', path=folder_path),
             'thumbnail':thumbnail,
         })
-    items = items + favourites(path)
+    items = items + sorted(favourites(path), key=lambda x: x["label"].lower())
 
     items.append(
     {
