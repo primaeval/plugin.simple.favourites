@@ -1,19 +1,9 @@
-from datetime import datetime,timedelta
 from rpc import RPC
 from xbmcswift2 import Plugin
-from xbmcswift2 import actions
-import HTMLParser
-import os
-import random
 import re
 import requests
-import sqlite3
-import time
 import xbmc,xbmcaddon,xbmcvfs,xbmcgui
 import xbmcplugin
-import json
-import sys
-from types import *
 
 plugin = Plugin()
 big_list_view = False
@@ -152,24 +142,6 @@ def favourites(folder_path):
                 'context_menu': context_items,
             })
     return items
-
-'''
-@plugin.route('/add_item/<title>/<path>/<icon>')
-def add_item(title,path,icon):
-    folder_path = "special://profile/addon_data/%s/folders/" % (addon_id())
-    favourites_file = "%sfavourites.xml" % folder_path
-    f = xbmcvfs.File(favourites_file,"rb")
-    data = f.read()
-    f.close()
-    if not data:
-        data = '<favourites>\n</favourites>'
-    fav = '    <favourite name="%s" thumb="%s">%s</favourite>\n</favourites>' % (title,icon,path)
-    data = data.replace('</favourites>',fav)
-    f = xbmcvfs.File(favourites_file,"wb")
-    f.write(data)
-    f.close()
-    xbmc.executebuiltin('Container.Refresh')
-'''
 
 @plugin.route('/add_favourites/<path>')
 def add_favourites(path):
