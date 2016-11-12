@@ -201,6 +201,32 @@ def add_folder(path):
     folder_icon = get_icon_path('folder')
     xbmcvfs.copy(folder_icon,path+"icon.png")
 
+def remove_files(path):
+    dirs,files = xbmcvfs.listdir(path)
+    for d in dirs:
+        remove_files("%s%s/" % (path,d))
+    for f in files:
+        xbmcvfs.delete("%s%s" % (path,f))
+    xbmcvfs.rmdir(path)
+
+
+@plugin.route('/remove_folder/<path>')
+def remove_folder(path):
+    d = xbmcgui.Dialog()
+    yes = d.yesno("Remove Folder", "Are you sure?")
+    if not yes:
+        return
+    remove_files(path)
+    xbmc.executebuiltin('Container.Refresh')
+
+@plugin.route('/rename_folder/<path>')
+def rename_folder(path):
+    pass
+
+@plugin.route('/change_folder_thumbnail/<path>')
+def change_folder_thumbnail(path):
+    pass
+
 @plugin.route('/add_library/<path>')
 def add_library(path):
     pass
@@ -340,11 +366,16 @@ def index_of(path=None):
     for folder in sorted(folders, key=lambda x: x.lower()):
         folder_path = "%s%s/" % (path,folder)
         thumbnail = "%sicon.png" % folder_path
+        context_items = []
+        context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Remove', 'XBMC.RunPlugin(%s)' % (plugin.url_for(remove_folder, path=folder_path))))
+        context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Rename', 'XBMC.RunPlugin(%s)' % (plugin.url_for(rename_folder, path=folder_path))))
+        context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Change Image', 'XBMC.RunPlugin(%s)' % (plugin.url_for(change_folder_thumbnail, path=folder_path))))
         items.append(
         {
             'label': folder,
             'path': plugin.url_for('index_of', path=folder_path),
             'thumbnail':thumbnail,
+            'context_menu': context_items,
         })
     items = items + sorted(favourites(path), key=lambda x: x["label"].lower())
 
