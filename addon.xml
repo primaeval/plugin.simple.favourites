@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <addon id="plugin.simple.favourites"
 version="0.1.0"
-name="Simple Favourites"
+name="Simple Favourites 2"
 provider-name="primaeval">
 <requires>
   <import addon="xbmc.python" version="2.20.0"/>
@@ -12,7 +12,7 @@ provider-name="primaeval">
   <provides>image video audio executable</provides>
 </extension>
 <extension point="xbmc.addon.metadata">
-  <summary lang="en">Simple Favourites</summary>
+  <summary lang="en">Simple Favourites 2</summary>
   <description lang="en"></description>
   <disclaimer lang="en">.</disclaimer>
 </extension>

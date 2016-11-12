@@ -44,34 +44,51 @@ def play(url):
 def execute(url):
     xbmc.executebuiltin(url)
 
+@plugin.route('/favourites/<favourites_file>/<name>/<url>')
+def remove_favourite(favourites_file,name,url):
+    log((favourites_file,name,url))
+    f = xbmcvfs.File(favourites_file,"rb")
+    data = f.read()
+    f.close()
+    data = re.sub('.*<favourite name="%s".*?>%s</favourite>.*\n' % (re.escape(name),re.escape(url)),'',data)
+    f = xbmcvfs.File(favourites_file,"wb")
+    f.write(data)
+    f.close()
+    xbmc.executebuiltin('Container.Refresh')
+
 @plugin.route('/favourites/<folder_path>')
 def favourites(folder_path):
     items = []
-    if plugin.get_setting('kodi.favourites') == 'true':
-        f = xbmcvfs.File("%sfavourites.xml" % folder_path,"rb")
-        data = f.read()
-        favourites = re.findall("<favourite.*?</favourite>",data)
-        for fav in favourites:
-            fav = re.sub('&quot;','"',fav)
-            url = ''
-            match = re.search('<favourite name="(.*?)" thumb="(.*?)">(.*?)<',fav)
+    favourites_file = "%sfavourites.xml" % folder_path
+    f = xbmcvfs.File(favourites_file,"rb")
+    data = f.read()
+    favourites = re.findall("<favourite.*?</favourite>",data)
+    for fav in favourites:
+        url = ''
+        match = re.search('<favourite name="(.*?)" thumb="(.*?)">(.*?)<',fav)
+        if match:
+            label = match.group(1)
+            thumbnail = match.group(2)
+            url = match.group(3)
+        else:
+            match = re.search('<favourite name="(.*?)">(.*?)<',fav)
             if match:
                 label = match.group(1)
-                thumbnail = match.group(2)
-                url = match.group(3)
-            else:
-                match = re.search('<favourite name="(.*?)">(.*?)<',fav)
-                if match:
-                    label = match.group(1)
-                    thumbnail = ''
-                    url = match.group(2)
-            if url:
-                items.append(
-                {
-                    'label': label,
-                    'path': plugin.url_for('execute',url=url),
-                    'thumbnail':thumbnail,
-                })
+                thumbnail = ''
+                url = match.group(2)
+        if url:
+            context_items = []
+            context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Remove', 'XBMC.RunPlugin(%s)' % (plugin.url_for(remove_favourite, favourites_file=favourites_file, name=label, url=url))))
+            label = re.sub('&quot;','"',label)
+            url = re.sub('&quot;','"',url)
+            thumbnail = re.sub('&quot;','"',thumbnail)
+            items.append(
+            {
+                'label': label,
+                'path': plugin.url_for('execute',url=url),
+                'thumbnail':thumbnail,
+                'context_menu': context_items,
+            })
     return items
 
 
