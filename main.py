@@ -199,7 +199,8 @@ def add_folder(path):
     path = "%s%s/" % (path,folder_name)
     xbmcvfs.mkdirs(path)
     folder_icon = get_icon_path('folder')
-    xbmcvfs.copy(folder_icon,path+"icon.png")
+    icon_file = path+"icon.txt"
+    xbmcvfs.File(icon_file,"wb").write(folder_icon)
 
 def remove_files(path):
     dirs,files = xbmcvfs.listdir(path)
@@ -232,11 +233,13 @@ def rename_folder(path,name):
 
 @plugin.route('/change_folder_thumbnail/<path>')
 def change_folder_thumbnail(path):
-    pass
-
-@plugin.route('/add_library/<path>')
-def add_library(path):
-    pass
+    d = xbmcgui.Dialog()
+    new_thumbnail = d.browse(2, 'Choose Image', 'files')
+    if not new_thumbnail:
+        return
+    icon_file = "%sicon.txt" % path
+    xbmcvfs.File(icon_file,"wb").write(new_thumbnail)
+    xbmc.executebuiltin('Container.Refresh')
 
 @plugin.route('/add_addons_folder/<favourites_file>/<media>/<path>')
 def add_addons_folder(favourites_file,media,path):
@@ -372,7 +375,8 @@ def index_of(path=None):
     folders, files = xbmcvfs.listdir(path)
     for folder in sorted(folders, key=lambda x: x.lower()):
         folder_path = "%s%s/" % (path,folder)
-        thumbnail = "%sicon.png" % folder_path
+        thumbnail_file = "%sicon.txt" % folder_path
+        thumbnail = xbmcvfs.File(thumbnail_file,"rb").read()
         context_items = []
         context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Remove', 'XBMC.RunPlugin(%s)' % (plugin.url_for(remove_folder, path=folder_path))))
         context_items.append(("[COLOR yellow][B]%s[/B][/COLOR] " % 'Rename', 'XBMC.RunPlugin(%s)' % (plugin.url_for(rename_folder, path=path, name=folder))))
